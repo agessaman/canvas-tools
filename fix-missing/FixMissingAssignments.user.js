@@ -7,7 +7,7 @@
 // @match        https://*.instructure.com/courses/*/assignments
 // @match        https://*.instructure.com/courses/*/assignments/*
 // @grant        none
-// @updateURL    none
+// @updateURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixMissingAssignments.user.js
 // ==/UserScript==
 
 
