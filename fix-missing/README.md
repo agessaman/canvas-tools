@@ -8,7 +8,15 @@
 This script should be installed with TamperMonkey. It has only been tested in Chrome on Mac and Windows.
 
 ## About
-Teachers in a hybrid environment tend collect assignments online as well as on paper. Canvas doesn't handle this well, because if Online Submissions are enabled, it expects all submissions to come in online--and thus flags any assignment without a submission as missing. This leads to poor communication from teachers to parents/students, who often look at the missing flag before looking at the score column.
+Teachers in a hybrid environment tend to collect assignments online as well as on paper. Canvas doesn't handle this well, because if Online Submissions are enabled, it expects all submissions to come in online--and thus flags any assignment without a submission as missing. This leads to poor communication from teachers to parents/students, who often look at the missing flag before looking at the score column.
+
+To resolve this, this script removes the missing flag from assignments if they meet certain criteria. The default settings are:
+1. Remove the missing flag if the assignment was submitted
+2. Remove the missing flag if the assignment has a score greater than 0
+3. Retain the missing flag for assignment with null scores (a dash in the gradebook)
+4. Retain the late flag for all assignments
+
+There are options described below to change these behaviors.
 
 This script runs on the Assignments page which lists all assignments in a course, as well as individual assignment pages. It adds an additional option to the "three-dot" overflow menu on those pages. When run on the Assignments page, it affects all assignments in the course. When run on an individual assignment page, it affects only that specific assignment.
 
