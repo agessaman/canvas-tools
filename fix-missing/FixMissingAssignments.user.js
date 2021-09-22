@@ -238,7 +238,7 @@ function processSubmissions(data) {
             continue;
         }
         let hasScore = false;
-        if ((config.zero_missing && submission.score > 0) || (!config.null_missing && submission.score === null)) {
+        if ((config.zero_missing && submission.score > 0) || (config.null_missing && submission.score === null)) {
             hasScore = true;
         }
 
