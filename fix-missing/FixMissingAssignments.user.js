@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Clear Missing Assignments
 // @namespace    https://github.com/agessaman
-// @version      0.2
+// @version      0.2a
 // @description  Add Clear Missing Script to Overflow Menu
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
