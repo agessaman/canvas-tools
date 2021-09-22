@@ -1,5 +1,5 @@
 # Fix Missing Assignments
-This is a user script that adds an item to the overflow (additional action) menu on individual assignment pages and the Assignments page. Selecting the Fix Missing Assignments option removes the missing labels from assignments that have a score but which have no submission attached.
+<img src="./FixMissingAssignment-Menu.png?raw=true" align="right" alt="image of Fix Missing Assignments menu on Assignments page"/>This is a user script that adds an item to the overflow (additional action) menu on individual assignment pages and the Assignments page. Selecting the Fix Missing Assignments option removes the missing labels from assignments that have a score but which have no submission attached.
 
 ## Quick Install
 1. Install and enable the [Tampermonkey](http://tampermonkey.net/) browser extension
