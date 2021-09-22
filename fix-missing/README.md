@@ -10,7 +10,7 @@ This script should be installed with TamperMonkey. It has only been tested in Ch
 ## About
 Teachers in a hybrid environment tend collect assignments online as well as on paper. Canvas doesn't handle this well, because if Online Submissions are enabled, it expects all submissions to come in online--and thus flags any assignment without a submission as missing. This leads to poor communication from teachers to parents/students, who often look at the missing flag before looking at the score column.
 
-This script runs on the Assignments page which lists all assignments in a course, as well as individual assignment pages. It adds an additional option to the "three-dot" overflow menu on those pages.
+This script runs on the Assignments page which lists all assignments in a course, as well as individual assignment pages. It adds an additional option to the "three-dot" overflow menu on those pages. When run on the Assignments page, it affects all assignments in the course. When run on an individual assignment page, it affects only that specific assignment.
 
 ## Customization
 This script will automatically run on any Canvas instance hosted at ``*.instructure.com``. If you have a custom domain, then you will need to modify the ``// match`` line to refer to your site.
