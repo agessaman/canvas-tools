@@ -6,6 +6,8 @@
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
 // @match        https://*.instructure.com/courses/*/assignments/*
+// @match        https://*.instructure.com/courses/*/quizzes/*
+// @match        https://*.instructure.com/courses/*/discussion_topics/*
 // @grant        none
 // @updateURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixMissingAssignments.user.js
 // ==/UserScript==
@@ -236,7 +238,7 @@ function processSubmissions(data) {
             continue;
         }
         let hasScore = false;
-        if ((config.zero_missing && submission.score !== 0) || (config.null_missing && submission.score === null)) {
+        if ((config.zero_missing && submission.score > 0) || (!config.null_missing && submission.score === null)) {
             hasScore = true;
         }
 
@@ -263,7 +265,7 @@ function processSubmissions(data) {
         }
 
         if (config.debug) {
-            console.log(submission.user_id + ' late_policy_status: ' + submission.late_policy_status + ', late: ' + submission.late + ', hasScore: ' + hasScore + ', status: ' + status);
+            console.log(submission.user_id + ' late_policy_status: ' + submission.late_policy_status + ', late: ' + submission.late + ', score: ' + submission.score +', hasScore: ' + hasScore + ', status: ' + status);
         }
 
         if (status !== false) {
