@@ -1,13 +1,15 @@
 // ==UserScript==
-// @name         Clear Missing Assignments
+// @name         Fix Missing Assignments
 // @namespace    https://github.com/agessaman
-// @version      0.2a
+// @version      0.3
 // @description  Add Clear Missing Script to Overflow Menu
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
 // @match        https://*.instructure.com/courses/*/assignments/*
 // @match        https://*.instructure.com/courses/*/quizzes/*
+// @match        https://*.instructure.com/courses/*/quizzes
 // @match        https://*.instructure.com/courses/*/discussion_topics/*
+// @match        https://*.instructure.com/courses/*/discussion_topics
 // @grant        none
 // @updateURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixMissingAssignments.user.js
 // ==/UserScript==
@@ -41,37 +43,36 @@ if (contextId) {
 switch (contextType) {
     case 'assignments':
         listUrl = `${baseUrl}/assignment_groups?include[]=assignments&exclude_response_fields[]=rubric&exclude_response_fields[]=description&override_assignment_dates=false`;
+        console.log("Context: assignments " + contextId);
+        if (contextId) {
+            add_observer("#toolbar-1");
+        } else {
+            add_observer("#ui-id-1");
+        }
         break;
     case 'discussion_topics':
         listUrl = `${baseUrl}/discussion_topics?exclude_assignment_descriptions=true&plain_messages=true&per_page=30`;
+        add_observer("#ui-id-1");
         break;
     case 'quizzes':
         listUrl = `${baseUrl}/quizzes?per_page=30`;
+        add_observer("#toolbar-1");
         break;
 }
 
-new MutationObserver((mutations, observer) => {
-    const keyElem = document.querySelector("#ui-id-1");
-    if (keyElem) {
-        var myEle = document.getElementById("ag_missing");
-        if(!myEle){
-            addMenuItem_assignments(keyElem);
-        }
-        observer.disconnect();
-    }
-}).observe(document.body, {attributes:true, childList:true, subtree:true});
 
-new MutationObserver((mutations, observer) => {
-    const keyElem = document.querySelector("#toolbar-1");
-    if (keyElem) {
-        var myEle = document.getElementById("ag_missing");
-        if(!myEle){
-            addMenuItem_assignments(keyElem);
+function add_observer(selector) {
+    new MutationObserver((mutations, observer) => {
+        const keyElem = document.querySelector(selector);
+        if (keyElem) {
+            var myEle = document.getElementById("ag_missing");
+            if(!myEle){
+                addMenuItem_assignments(keyElem);
+            }
+            observer.disconnect();
         }
-        observer.disconnect();
-    }
-}).observe(document.body, {attributes:true, childList:true, subtree:true});
-
+    }).observe(document.body, {attributes:true, childList:true, subtree:true});
+}
 
 function addMenuItem_assignments(jNode) {
     if (jNode)
