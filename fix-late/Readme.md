@@ -3,7 +3,7 @@
 
 ## Quick Install
 1. Install and enable the [Tampermonkey](http://tampermonkey.net/) browser extension
-2. Install the [FixMissingAssignments.user.js](https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixMissingAssignments.user.js) file
+2. Install the [FixLateAssignments.user.js](https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixLateAssignments.user.js) file
 
 This script should be installed with TamperMonkey. It has only been tested in Chrome on Mac and Windows.
 
