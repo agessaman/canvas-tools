@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Fix Late Assignments
 // @namespace    https://github.com/agessaman
-// @version      1.4
-// @description  Add Fix Late Work Script to Overflow Menu
+// @version      1.6
+// @description  Add Fix Late Assignments Script to Overflow Menu and as a direct button
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
 // @match        https://*.instructure.com/courses/*/assignments/*
@@ -63,6 +63,9 @@
             right: 5px;
             cursor: pointer;
             font-weight: bold;
+        }
+        #fixLateButton {
+            margin-top: 10px;
         }
     `);
 
@@ -126,16 +129,16 @@
     }
 
     function addMenuItem(menuContainer) {
-        if (menuContainer && !document.getElementById("ag_missing")) {
+        if (menuContainer && !document.getElementById("ag_late")) {
             const newLI = document.createElement("li");
             newLI.setAttribute("class", "ui-menu-item");
             newLI.setAttribute("role", "presentation");
-            newLI.setAttribute("id", "ag_missing");
+            newLI.setAttribute("id", "ag_late");
 
             const newA = document.createElement("a");
-            newA.innerHTML = "<i class='icon-clock'></i>Fix Late Assignments";
+            newA.innerHTML = "<i class='icon-clock'></i> Fix Late Assignments";
             newA.href = "#";
-            newA.addEventListener('click', fix_missing, {
+            newA.addEventListener('click', fix_late, {
                 once: true,
             });
             newLI.appendChild(newA);
@@ -166,12 +169,12 @@
         }).observe(document.body, {childList: true, subtree: true});
     }
 
-    function fix_missing() {
+    function fix_late() {
         log('Beginning to set labels and remove late penalties.');
         totalUpdated = 0;
         errors = [];
 
-        const promise = isSingleItem ?
+        const promise = isSingleItem ? 
             getAPI(listUrl, 'single_item') :
             getAPI(listUrl, contextType);
 
@@ -283,7 +286,6 @@
     }
 
     function checkItem(item) {
-        // Check if the item should be processed
         if (item.published && item.due_at) {
             log(`Item ${item.id} is published and has a due date. Processing.`);
             return item.id;
@@ -391,6 +393,27 @@
         return null;
     }
 
-    setupListUrl();
-    addObserver();
+    function addFixLateButton() {
+        const speedGraderContainer = document.getElementById('speed_grader_link_container');
+        if (speedGraderContainer) {
+            const button = document.createElement('button');
+            button.id = 'fixLateButton';
+            button.className = 'btn button-sidebar-wide';
+            button.innerHTML = '<i class="icon-clock"></i> Fix Late Assignments';
+            button.addEventListener('click', fix_late);
+            speedGraderContainer.insertAdjacentElement('afterend', button);
+            log('Fix Late Assignments button added to the page');
+        } else {
+            log('Speed Grader container not found, button not added');
+        }
+    }
+
+    function init() {
+        setupListUrl();
+        addObserver();
+        addFixLateButton();
+    }
+
+    // Call the init function when the script loads
+    init();
 })();
