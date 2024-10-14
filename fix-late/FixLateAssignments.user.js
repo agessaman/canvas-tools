@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Fix Late Assignments
+// @name         Fix Late Assignments and Remove Missing from Graded
 // @namespace    https://github.com/agessaman
-// @version      1.6
-// @description  Add Fix Late Assignments Script to Overflow Menu and as a direct button
+// @version      1.7
+// @description  Add Fix Late Assignments and Remove Missing from Graded Scripts to Overflow Menu and as direct buttons
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
 // @match        https://*.instructure.com/courses/*/assignments/*
@@ -12,6 +12,7 @@
 // @match        https://*.instructure.com/courses/*/discussion_topics
 // @grant        GM_addStyle
 // @updateURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixLateAssignments.user.js
+// @downloadURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixLateAssignments.user.js
 // ==/UserScript==
 
 (function() {
@@ -31,7 +32,7 @@
 
     function log(message) {
         if (config.debug) {
-            console.log(`[Fix Late Assignments] ${message}`);
+            console.log(`[Fix Assignments Script] ${message}`);
         }
     }
 
@@ -64,8 +65,9 @@
             cursor: pointer;
             font-weight: bold;
         }
-        #fixLateButton {
+        #fixLateButton, #removeMissingButton {
             margin-top: 10px;
+            margin-right: 10px;
         }
     `);
 
@@ -143,7 +145,22 @@
             });
             newLI.appendChild(newA);
             menuContainer.appendChild(newLI);
-            log('Menu item added successfully');
+
+            const removeMissingLI = document.createElement("li");
+            removeMissingLI.setAttribute("class", "ui-menu-item");
+            removeMissingLI.setAttribute("role", "presentation");
+            removeMissingLI.setAttribute("id", "ag_remove_missing");
+
+            const removeMissingA = document.createElement("a");
+            removeMissingA.innerHTML = "<i class='icon-check'></i> Remove Missing from Graded";
+            removeMissingA.href = "#";
+            removeMissingA.addEventListener('click', remove_missing_from_graded, {
+                once: true,
+            });
+            removeMissingLI.appendChild(removeMissingA);
+            menuContainer.appendChild(removeMissingLI);
+
+            log('Menu items added successfully');
         }
     }
 
@@ -174,7 +191,7 @@
         totalUpdated = 0;
         errors = [];
 
-        const promise = isSingleItem ? 
+        const promise = isSingleItem ?
             getAPI(listUrl, 'single_item') :
             getAPI(listUrl, contextType);
 
@@ -185,6 +202,30 @@
             })
             .finally(() => {
                 log(`Done setting labels for ${isSingleItem ? 'single item' : 'all ' + contextType}`);
+                const message = `
+                    <p>Total assignments updated: ${totalUpdated}</p>
+                    ${errors.length > 0 ? `<p>Errors encountered:</p><ul>${errors.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
+                `;
+                showToast(message);
+            });
+    }
+
+    function remove_missing_from_graded() {
+        log('Beginning to remove missing status from graded assignments.');
+        totalUpdated = 0;
+        errors = [];
+
+        const promise = isSingleItem ?
+            getAPI(listUrl, 'single_item_remove_missing') :
+            getAPI(listUrl, `${contextType}_remove_missing`);
+
+        promise
+            .catch(e => {
+                log(`Error processing ${isSingleItem ? 'single item' : contextType}: ${e}`);
+                errors.push(e.toString());
+            })
+            .finally(() => {
+                log(`Done removing missing status for ${isSingleItem ? 'single item' : 'all ' + contextType}`);
                 const message = `
                     <p>Total assignments updated: ${totalUpdated}</p>
                     ${errors.length > 0 ? `<p>Errors encountered:</p><ul>${errors.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
@@ -234,12 +275,20 @@
         switch (handler) {
             case 'single_item':
                 return processSingleItem(data);
+            case 'single_item_remove_missing':
+                return processSingleItemRemoveMissing(data);
             case 'assignments':
             case 'quizzes':
             case 'discussion_topics':
                 return processItems(data, handler);
+            case 'assignments_remove_missing':
+            case 'quizzes_remove_missing':
+            case 'discussion_topics_remove_missing':
+                return processItemsRemoveMissing(data, handler.replace('_remove_missing', ''));
             case 'submissions':
                 return processSubmissions(data);
+            case 'submissions_remove_missing':
+                return processSubmissionsRemoveMissing(data);
             default:
                 log(`Unknown handler: ${handler}`);
                 return Promise.resolve(true);
@@ -251,6 +300,15 @@
         const itemId = checkItem(data);
         if (itemId) {
             return getSubmissions([{id: itemId, type: contextType, data: data}]);
+        }
+        return Promise.resolve(true);
+    }
+
+    function processSingleItemRemoveMissing(data) {
+        log('Processing single item to remove missing status:', data);
+        const itemId = checkItem(data);
+        if (itemId) {
+            return getSubmissionsRemoveMissing([{id: itemId, type: contextType, data: data}]);
         }
         return Promise.resolve(true);
     }
@@ -285,6 +343,36 @@
         return getSubmissions(itemIds);
     }
 
+    function processItemsRemoveMissing(data, type) {
+        const itemIds = [];
+        if (Array.isArray(data)) {
+            if (type === 'assignments') {
+                data.forEach(group => {
+                    group.assignments.forEach(a => {
+                        const id = checkItem(a);
+                        if (id) {
+                            itemIds.push({id, type: 'assignments', data: a});
+                        }
+                    });
+                });
+            } else {
+                data.forEach(item => {
+                    const id = checkItem(item);
+                    if (id) {
+                        itemIds.push({id, type, data: item});
+                    }
+                });
+            }
+        } else {
+            const id = checkItem(data);
+            if (id) {
+                itemIds.push({id, type, data: data});
+            }
+        }
+        log(`Found ${itemIds.length} items to process for removing missing status`);
+        return getSubmissionsRemoveMissing(itemIds);
+    }
+
     function checkItem(item) {
         if (item.published && item.due_at) {
             log(`Item ${item.id} is published and has a due date. Processing.`);
@@ -311,9 +399,31 @@
         return Promise.all(submissionPromises);
     }
 
+    function getSubmissionsRemoveMissing(items) {
+        log(`Getting submissions for ${items.length} items to remove missing status`);
+        const submissionPromises = items.map(item => {
+            if (item.type === 'quizzes') {
+                if (item.data.assignment_id) {
+                    return getAssignmentSubmissionsRemoveMissing(item.data.assignment_id);
+                } else {
+                    log(`Quiz ${item.id} does not have an associated assignment. Skipping.`);
+                    return Promise.resolve([]);
+                    }
+            } else {
+                return getAssignmentSubmissionsRemoveMissing(item.id);
+            }
+        });
+        return Promise.all(submissionPromises);
+    }
+
     function getAssignmentSubmissions(assignmentId) {
         const url = `${baseUrl}/assignments/${assignmentId}/submissions?include[]=submission_history&per_page=100`;
         return getAPI(url, 'submissions');
+    }
+
+    function getAssignmentSubmissionsRemoveMissing(assignmentId) {
+        const url = `${baseUrl}/assignments/${assignmentId}/submissions?include[]=submission_history&per_page=100`;
+        return getAPI(url, 'submissions_remove_missing');
     }
 
     function processSubmissions(submissions) {
@@ -325,6 +435,17 @@
         return Promise.all(updatePromises);
     }
 
+function processSubmissionsRemoveMissing(submissions) {
+    log(`Processing ${submissions.length} submissions to remove missing status`);
+    const updatePromises = submissions.filter(submission => {
+        const score = parseFloat(submission.score);
+        return submission.missing && submission.grade && score > 0;
+    }).map(submission => {
+        log(`Submission ${submission.id} is missing but has a grade > 0. Removing missing status.`);
+        return removeMissingStatus(submission);
+    });
+    return Promise.all(updatePromises);
+}
     function removeLatePenalty(submission) {
         log(`Removing late penalty for submission ${submission.id}`);
         const url = `${baseUrl}/assignments/${submission.assignment_id}/submissions/${submission.user_id}`;
@@ -342,40 +463,63 @@
             });
     }
 
-    function putAPI(url, data) {
-        log(`Sending PUT request to: ${url}`);
-        const csrfToken = getCsrfToken();
-        if (!csrfToken) {
-            log('CSRF token not found. Aborting PUT request.');
-            return Promise.reject(new Error('CSRF token not found'));
+function removeMissingStatus(submission) {
+    log(`Removing missing status for submission ${submission.id}`);
+    const url = `${baseUrl}/assignments/${submission.assignment_id}/submissions/${submission.user_id}`;
+    const data = {
+        submission: {
+            late_policy_status: 'none',
+            workflow_state: 'graded'
         }
-        const options = {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
-            credentials: 'include',
-            body: JSON.stringify(data)
-        };
+    };
+    return putAPI(url, data)
+        .then(() => {
+            totalUpdated++;
+            log(`Successfully removed missing status for submission ${submission.id}`);
+        })
+        .catch(e => {
+            if (e.status === 403) {
+                log(`Permission denied for updating submission ${submission.id}. This may be due to lack of necessary permissions.`);
+                errors.push(`Permission denied for submission ${submission.id}: ${e.toString()}`);
+            } else {
+                errors.push(`Failed to update submission ${submission.id}: ${e.toString()}`);
+            }
+        });
+}
 
-        return fetch(url, options)
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(json => {
-                log(`Successfully updated submission: ${json.id}`);
-                return json;
-            })
-            .catch(e => {
-                log(`Error updating submission: ${e}`);
-                throw e;
-            });
+
+function putAPI(url, data) {
+    log(`Sending PUT request to: ${url}`);
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        log('CSRF token not found. Aborting PUT request.');
+        return Promise.reject(new Error('CSRF token not found'));
     }
+    const options = {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+    };
+
+    return fetch(url, options)
+        .then(res => {
+            if (!res.ok) {
+                const error = new Error(`HTTP error! status: ${res.status}`);
+                error.status = res.status;
+                throw error;
+            }
+            return res.json();
+        })
+        .then(json => {
+            log(`Successfully updated submission: ${json.id}`);
+            return json;
+        });
+}
 
     function getCsrfToken() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -393,25 +537,33 @@
         return null;
     }
 
-    function addFixLateButton() {
+    function addButtons() {
         const speedGraderContainer = document.getElementById('speed_grader_link_container');
         if (speedGraderContainer) {
-            const button = document.createElement('button');
-            button.id = 'fixLateButton';
-            button.className = 'btn button-sidebar-wide';
-            button.innerHTML = '<i class="icon-clock"></i> Fix Late Assignments';
-            button.addEventListener('click', fix_late);
-            speedGraderContainer.insertAdjacentElement('afterend', button);
-            log('Fix Late Assignments button added to the page');
+            const fixLateButton = document.createElement('button');
+            fixLateButton.id = 'fixLateButton';
+            fixLateButton.className = 'btn button-sidebar-wide';
+            fixLateButton.innerHTML = '<i class="icon-clock"></i> Fix Late Assignments';
+            fixLateButton.addEventListener('click', fix_late);
+            speedGraderContainer.insertAdjacentElement('afterend', fixLateButton);
+
+            const removeMissingButton = document.createElement('button');
+            removeMissingButton.id = 'removeMissingButton';
+            removeMissingButton.className = 'btn button-sidebar-wide';
+            removeMissingButton.innerHTML = '<i class="icon-check"></i> Remove Missing from Graded';
+            removeMissingButton.addEventListener('click', remove_missing_from_graded);
+            fixLateButton.insertAdjacentElement('afterend', removeMissingButton);
+
+            log('Fix Late Assignments and Remove Missing from Graded buttons added to the page');
         } else {
-            log('Speed Grader container not found, button not added');
+            log('Speed Grader container not found, buttons not added');
         }
     }
 
     function init() {
         setupListUrl();
         addObserver();
-        addFixLateButton();
+        addButtons();
     }
 
     // Call the init function when the script loads
