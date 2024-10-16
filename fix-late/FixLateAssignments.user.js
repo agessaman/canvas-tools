@@ -439,7 +439,7 @@ function processSubmissionsRemoveMissing(submissions) {
     log(`Processing ${submissions.length} submissions to remove missing status`);
     const updatePromises = submissions.filter(submission => {
         const score = parseFloat(submission.score);
-        return submission.missing && submission.grade && score > 0;
+        return submission.missing && submission.grade && (score > 0 || (score === 0 && submission.points_possible === 0));
     }).map(submission => {
         log(`Submission ${submission.id} is missing but has a grade > 0. Removing missing status.`);
         return removeMissingStatus(submission);
