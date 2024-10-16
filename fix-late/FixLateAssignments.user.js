@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fix Late Assignments and Remove Missing from Graded
 // @namespace    https://github.com/agessaman
-// @version      1.7
+// @version      1.7.1
 // @description  Add Fix Late Assignments and Remove Missing from Graded Scripts to Overflow Menu and as direct buttons
 // @author       Adam Gessaman
 // @match        https://*.instructure.com/courses/*/assignments
