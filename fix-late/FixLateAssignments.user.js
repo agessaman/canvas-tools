@@ -438,9 +438,11 @@ function processSubmissionsRemoveMissing(submissions) {
     log(`Processing ${submissions.length} submissions to remove missing status`);
     const updatePromises = submissions.filter(submission => {
         const score = parseFloat(submission.score);
-        return submission.missing && submission.grade && (score > 0 || (score === 0 && submission.points_possible === 0));
+        const shouldUpdate = submission.missing && submission.grade && (score > 0 || (score === 0 && submission.points_possible === 0));
+        log(`Submission ${submission.id}: missing=${submission.missing}, grade=${submission.grade}, score=${score}, points_possible=${submission.points_possible}, shouldUpdate=${shouldUpdate}`);
+        return shouldUpdate;
     }).map(submission => {
-        log(`Submission ${submission.id} is missing but has a grade > 0. Removing missing status.`);
+        log(`Removing missing status for submission ${submission.id}`);
         return removeMissingStatus(submission);
     });
     return Promise.all(updatePromises);
@@ -463,7 +465,7 @@ function processSubmissionsRemoveMissing(submissions) {
     }
 
 function removeMissingStatus(submission) {
-    log(`Removing missing status for submission ${submission.id}`);
+    log(`Attempting to remove missing status for submission ${submission.id}`);
     const url = `${baseUrl}/assignments/${submission.assignment_id}/submissions/${submission.user_id}`;
     const data = {
         submission: {
@@ -472,17 +474,13 @@ function removeMissingStatus(submission) {
         }
     };
     return putAPI(url, data)
-        .then(() => {
+        .then((response) => {
             totalUpdated++;
-            log(`Successfully removed missing status for submission ${submission.id}`);
+            log(`Successfully removed missing status for submission ${submission.id}. Response:`, response);
         })
         .catch(e => {
-            if (e.status === 403) {
-                log(`Permission denied for updating submission ${submission.id}. This may be due to lack of necessary permissions.`);
-                errors.push(`Permission denied for submission ${submission.id}: ${e.toString()}`);
-            } else {
-                errors.push(`Failed to update submission ${submission.id}: ${e.toString()}`);
-            }
+            log(`Error removing missing status for submission ${submission.id}:`, e);
+            errors.push(`Failed to update submission ${submission.id}: ${e.toString()}`);
         });
 }
 
@@ -507,15 +505,16 @@ function putAPI(url, data) {
 
     return fetch(url, options)
         .then(res => {
+            log(`Received response with status: ${res.status}`);
             if (!res.ok) {
-                const error = new Error(`HTTP error! status: ${res.status}`);
-                error.status = res.status;
-                throw error;
+                return res.text().then(text => {
+                    throw new Error(`HTTP error! status: ${res.status}, body: ${text}`);
+                });
             }
             return res.json();
         })
         .then(json => {
-            log(`Successfully updated submission: ${json.id}`);
+            log(`Successfully updated submission: ${json.id}`, json);
             return json;
         });
 }
