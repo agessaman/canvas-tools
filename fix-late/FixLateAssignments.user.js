@@ -12,7 +12,6 @@
 // @match        https://*.instructure.com/courses/*/discussion_topics
 // @grant        GM_addStyle
 // @updateURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixLateAssignments.user.js
-// @downloadURL    https://github.com/agessaman/canvas-tools/raw/main/fix-missing/FixLateAssignments.user.js
 // ==/UserScript==
 
 (function() {
